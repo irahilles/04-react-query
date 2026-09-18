@@ -9,27 +9,19 @@ import Loader from '../Loader/Loader';
 import ErrorMessage from '../ErrorMessage/ErrorMessage';
 import MovieModal from '../MovieModal/MovieModal';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import ReactPaginateModule from "react-paginate";
-import type { ReactPaginateProps } from "react-paginate";
-import type { ComponentType } from "react";
-
-type ModuleWithDefault<T> = { default: T };
-
-const ReactPaginate = (
-  ReactPaginateModule as unknown as ModuleWithDefault<ComponentType<ReactPaginateProps>>
-).default;
+import ReactPaginate from 'react-paginate';
 
 export default function App() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['movieName', query, page],
-    queryFn: () => fetchMovies(query, page),
-    enabled: query !== "",
-    placeholderData: keepPreviousData,
-  })  
+const { data, isLoading, isError, isSuccess, isFetching } = useQuery({
+  queryKey: ["movieName", query, page],
+  queryFn: () => fetchMovies(query, page),
+  enabled: query !== "",
+  placeholderData: keepPreviousData,
+});
   
   const handleSearch = (query: string) => {
     setQuery(query);
@@ -40,7 +32,7 @@ useEffect(() => {
   if (data && data.results.length === 0) {
     toast.error('No movies found for your request.');
   }
-}, [data]);
+}, [data, isSuccess]);
   
     const handleSelect = (movie: Movie) => {
         setSelectedMovie(movie);
@@ -64,8 +56,21 @@ activeClassName={css.active}
 nextLabel="→"
 previousLabel="←"
 />} 
-            {isLoading ? (<Loader />) : isError ? (<ErrorMessage />) : (data?.results && data.results.length > 0 && <MovieGrid onSelect={handleSelect} movies={data.results} />)}
-            {selectedMovie && <MovieModal movie={selectedMovie} onClose={handleCloseModal} />}
+{isLoading || isFetching ? (
+  <Loader />
+) : isError ? (
+  <ErrorMessage />
+) : (
+  isSuccess &&
+  data.results.length > 0 && (
+    <MovieGrid
+      onSelect={handleSelect}
+      movies={data.results}
+    />
+  )
+)}
+       
+ {selectedMovie && <MovieModal movie={selectedMovie} onClose={handleCloseModal} />}
 </div>
     )
 }
